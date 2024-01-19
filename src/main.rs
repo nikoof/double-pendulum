@@ -1,62 +1,43 @@
 use eframe::egui;
 
+mod pendulum;
+
+use pendulum::Pendulum;
+
+const MASS_COEFFICIENT: f32 = 10.0;
+
 fn main() -> eframe::Result<()> {
     eframe::run_native(
         "demo",
         eframe::NativeOptions::default(),
         Box::new(|_cc| {
             Box::new(App {
-                theta1: 0.0,
-                theta2: 0.0,
-                moving1: false,
-                moving2: false,
+                moving_one: false,
+                moving_two: false,
+
+                pendulum_one: Pendulum::default(),
+                pendulum_two: Pendulum::default(),
             })
         }),
     )
 }
 
 struct App {
-    theta1: f32,
-    theta2: f32,
-    moving1: bool,
-    moving2: bool,
+    moving_one: bool,
+    moving_two: bool,
+
+    pendulum_one: Pendulum,
+    pendulum_two: Pendulum,
 }
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let screen_size = ctx.screen_rect().size();
-        let origin = egui::vec2(screen_size.x / 2.0, 0.0);
+        self.pendulum_one.pivot = egui::vec2(ctx.screen_rect().size().x / 2.0, 0.0);
+        self.pendulum_two.pivot = self.pendulum_one.position();
 
-        ctx.input(|i| {
-            let p1 = Self::angle_to_pos(origin, self.theta1, 100.0);
-            let p2 = Self::angle_to_pos(p1, self.theta2, 100.0);
-            if let Some(pp) = i.pointer.latest_pos().map(|p| p.to_vec2()) {
-                if i.pointer.primary_pressed() {
-                    if (p1 - pp).length_sq() < 100.0 {
-                        self.moving1 = true;
-                    }
+        self.input(ctx);
 
-                    if dbg!(p2 - pp).length_sq() < 100.0 {
-                        self.moving2 = true;
-                    }
-                }
-
-                if i.pointer.primary_released() {
-                    self.moving1 = false;
-                    self.moving2 = false;
-                }
-
-                if self.moving1 {
-                    self.theta1 = Self::pos_to_angle(origin, pp);
-                }
-
-                if self.moving2 {
-                    self.theta2 = Self::pos_to_angle(p1, pp);
-                }
-            }
-        });
-
-        self.draw_pendulum(ctx);
+        self.canvas(ctx);
         self.ui(ctx);
 
         ctx.request_repaint();
@@ -64,6 +45,44 @@ impl eframe::App for App {
 }
 
 impl App {
+    fn input(&mut self, ctx: &egui::Context) {
+        let pointer_position = ctx.input(|i| {
+            if let Some(pointer_position) = i.pointer.latest_pos().map(|p| p.to_vec2()) {
+                if i.pointer.primary_pressed() {
+                    if (self.pendulum_one.position() - pointer_position).length_sq()
+                        < (self.pendulum_one.mass * MASS_COEFFICIENT).powi(2)
+                    {
+                        self.moving_one = true;
+                    }
+
+                    if (self.pendulum_two.position() - pointer_position).length_sq()
+                        < (self.pendulum_two.mass * MASS_COEFFICIENT).powi(2)
+                    {
+                        self.moving_two = true;
+                    }
+                }
+
+                if i.pointer.primary_released() {
+                    self.moving_one = false;
+                    self.moving_two = false;
+                }
+
+                pointer_position
+            } else {
+                egui::Vec2::ZERO
+            }
+        });
+
+        if self.moving_one {
+            self.pendulum_one.angle = (pointer_position - self.pendulum_one.pivot).yx().angle();
+            self.pendulum_two.pivot = self.pendulum_one.position();
+        }
+
+        if self.moving_two {
+            self.pendulum_two.angle = (pointer_position - self.pendulum_two.pivot).yx().angle();
+        }
+    }
+
     fn ui(&mut self, ctx: &egui::Context) {
         egui::Window::new("Controls").show(ctx, |ui| {
             ui.label("Test");
@@ -75,47 +94,29 @@ impl App {
         });
     }
 
-    fn draw_pendulum(&mut self, ctx: &egui::Context) {
-        let layer = egui::LayerId {
+    fn canvas(&mut self, ctx: &egui::Context) {
+        let painter = ctx.layer_painter(egui::LayerId {
             order: egui::layers::Order::Background,
             id: "bg".into(),
-        };
+        });
 
-        let painter = ctx.layer_painter(layer);
+        self.paint_pendulum(&painter, &self.pendulum_one);
+        self.paint_pendulum(&painter, &self.pendulum_two);
+    }
 
-        let screen_size = ctx.screen_rect().size();
-        let origin = egui::vec2(screen_size.x / 2.0, 0.0);
-
-        let p1 = Self::angle_to_pos(origin, self.theta1, 100.0);
-        let p2 = Self::angle_to_pos(p1, self.theta2, 100.0);
-
-        // self.theta1 += 0.01;
-        // self.theta2 += 0.03;
-
+    fn paint_pendulum(&self, painter: &egui::Painter, pendulum: &Pendulum) {
         painter.line_segment(
-            [origin.to_pos2(), p1.to_pos2()],
-            egui::Stroke {
-                width: 3.0,
-                color: egui::Color32::WHITE,
-            },
-        );
-        painter.line_segment(
-            [p1.to_pos2(), p2.to_pos2()],
+            [pendulum.pivot.to_pos2(), pendulum.position().to_pos2()],
             egui::Stroke {
                 width: 3.0,
                 color: egui::Color32::WHITE,
             },
         );
 
-        painter.circle_filled(p1.to_pos2(), 10.0, egui::Color32::WHITE);
-        painter.circle_filled(p2.to_pos2(), 10.0, egui::Color32::WHITE);
-    }
-
-    fn angle_to_pos(origin: egui::Vec2, theta: f32, arm_length: f32) -> egui::Vec2 {
-        origin + arm_length * egui::vec2(theta.sin(), theta.cos())
-    }
-
-    fn pos_to_angle(origin: egui::Vec2, pos: egui::Vec2) -> f32 {
-        (pos - origin).yx().angle()
+        painter.circle_filled(
+            pendulum.position().to_pos2(),
+            pendulum.mass * MASS_COEFFICIENT,
+            egui::Color32::WHITE,
+        );
     }
 }
