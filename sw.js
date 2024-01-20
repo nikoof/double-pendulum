@@ -1,4 +1,3 @@
-/* var cacheName = 'double_pendulum';
 var filesToCache = [
   './',
   './index.html',
@@ -23,4 +22,3 @@ self.addEventListener('fetch', function (e) {
     })
   );
 });
-*/
