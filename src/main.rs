@@ -13,18 +13,20 @@ fn main() -> eframe::Result<()> {
 }
 
 #[cfg(target_arch = "wasm32")]
-fn main() -> eframe::Result<()> {
+fn main() {
+    #[cfg(debug_assertions)]
     std::panic::set_hook(Box::new(console_error_panic_hook::hook));
 
-    eframe::WebLogger::init(log::LevelFilter::Debug)?;
+    eframe::WebLogger::init(log::LevelFilter::Debug).ok();
 
     wasm_bindgen_futures::spawn_local(async {
         eframe::WebRunner::new()
             .start(
                 "double_pendulum_canvas",
                 eframe::WebOptions::default(),
-                Box::new(|cc| Box::new(app::App::default())),
+                Box::new(|_cc| Box::new(app::App::default())),
             )
-            .await?
+            .await
+            .expect("Failed to initialize eframe")
     });
 }
