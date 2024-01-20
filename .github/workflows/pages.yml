@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Check Nix flake inputs
-        uses: DeterminateSystems/flake-checker-action@4
+        uses: DeterminateSystems/flake-checker-action@v4
       - name: Build packages.gh-pages
         run: nix build .#gh-pages
       - name: Deploy
