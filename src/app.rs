@@ -259,7 +259,7 @@ impl App {
             painter.add(egui::Shape::line(
                 self.position_history
                     .iter()
-                    .map(|(_, p)| self.canvas_transform * p.1)
+                    .map(|(_, p)| p.1 + self.dp.pendula.0.pivot.to_vec2())
                     .collect(),
                 egui::Stroke {
                     width: 1.0,
@@ -421,20 +421,16 @@ impl App {
         let p1: egui_plot::PlotPoints = self
             .position_history
             .iter()
-            .map(|(_, (pos, _))| self.canvas_transform * pos - self.dp.pendula.0.pivot)
-            .map(|pos| [pos.x as f64, -pos.y as f64])
+            .map(|(_, (pos, _))| [pos.x as f64, -pos.y as f64])
             .collect();
 
         let p2: egui_plot::PlotPoints = self
             .position_history
             .iter()
-            .map(|(_, (_, pos))| self.canvas_transform * pos - self.dp.pendula.0.pivot)
-            .map(|pos| [pos.x as f64, -pos.y as f64])
+            .map(|(_, (_, pos))| [pos.x as f64, -pos.y as f64])
             .collect();
 
         egui_plot::Plot::new("velocities")
-            // .view_aspect(1.0)
-            // .data_aspect(1.0)
             .legend(egui_plot::Legend::default())
             .show(ui, |plot_ui| {
                 plot_ui.line(egui_plot::Line::new(p1).name("First pendulum position"));
@@ -511,7 +507,12 @@ impl App {
 
         self.position_history.add(
             now,
-            (self.dp.pendula.0.position(), self.dp.pendula.1.position()),
+            (
+                self.canvas_transform * self.dp.pendula.0.position()
+                    - self.dp.pendula.0.pivot.to_vec2(),
+                self.canvas_transform * self.dp.pendula.1.position()
+                    - self.dp.pendula.0.pivot.to_vec2(),
+            ),
         );
 
         self.angle_history.add(
