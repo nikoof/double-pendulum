@@ -5,9 +5,19 @@ mod pendulum;
 
 #[cfg(not(target_arch = "wasm32"))]
 fn main() -> eframe::Result<()> {
+    env_logger::init();
+
+    let native_options = eframe::NativeOptions {
+        viewport: eframe::egui::ViewportBuilder::default().with_icon(
+            eframe::icon_data::from_png_bytes(&include_bytes!("../assets/icon-256.png")[..])
+                .unwrap(),
+        ),
+        ..Default::default()
+    };
+
     eframe::run_native(
         "Double Pendulum",
-        eframe::NativeOptions::default(),
+        native_options,
         Box::new(|_cc| Box::new(app::App::default())),
     )
 }

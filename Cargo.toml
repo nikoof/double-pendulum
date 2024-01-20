@@ -11,6 +11,9 @@ opt-level = 2
 [dependencies]
 eframe = "0.25.0"
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+env_logger = "0.11.0"
+
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen-futures = "0.4.40"
 console_error_panic_hook = "0.1.7"
