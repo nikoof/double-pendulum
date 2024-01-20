@@ -20,7 +20,14 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         "Double Pendulum",
         native_options,
-        Box::new(|_cc| Box::new(app::App::default())),
+        Box::new(|cc| {
+            let style = eframe::egui::Style {
+                visuals: eframe::egui::Visuals::dark(),
+                ..Default::default()
+            };
+            cc.egui_ctx.set_style(style);
+            Box::new(app::App::default())
+        }),
     )
 }
 
@@ -36,7 +43,14 @@ fn main() {
             .start(
                 "double_pendulum_canvas",
                 eframe::WebOptions::default(),
-                Box::new(|_cc| Box::new(app::App::default())),
+                Box::new(|cc| {
+                    let style = eframe::egui::Style {
+                        visuals: eframe::egui::Visuals::dark(),
+                        ..Default::default()
+                    };
+                    cc.egui_ctx.set_style(style);
+                    Box::new(app::App::default())
+                }),
             )
             .await
             .expect("Failed to initialize eframe")
