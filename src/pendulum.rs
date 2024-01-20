@@ -6,6 +6,8 @@ pub struct Pendulum {
     pub arm_length: f32,
     pub angle: f32,
     pub mass: f32,
+    pub velocity: f32,
+    pub acceleration: f32,
 }
 
 impl Default for Pendulum {
@@ -21,11 +23,67 @@ impl Pendulum {
             arm_length,
             angle,
             mass,
+            velocity: 0.0,
+            acceleration: 0.0,
         }
+    }
+
+    pub fn update(&mut self, delta_time: f32) {
+        self.angle += self.velocity * delta_time;
+        self.velocity += self.acceleration * delta_time;
     }
 
     #[inline]
     pub fn position(&self) -> Vec2 {
         self.pivot + self.arm_length * vec2(self.angle.sin(), self.angle.cos())
+    }
+}
+
+pub struct DoublePendulum {
+    pub pendula: (Pendulum, Pendulum),
+    pub gravity: f32,
+    pub damping: f32,
+}
+
+impl Default for DoublePendulum {
+    fn default() -> Self {
+        Self {
+            pendula: (Pendulum::default(), Pendulum::default()),
+            gravity: 1.0,
+            damping: 0.005,
+        }
+    }
+}
+
+impl DoublePendulum {
+    pub fn update(&mut self, delta_time: f32) {
+        self.pendula.0.update(delta_time);
+        self.pendula.1.update(delta_time);
+
+        let g = self.gravity;
+
+        let t1 = self.pendula.0.angle;
+        let m1 = self.pendula.0.mass;
+        let v1 = self.pendula.0.velocity;
+        let l1 = self.pendula.0.arm_length;
+
+        let t2 = self.pendula.1.angle;
+        let m2 = self.pendula.1.mass;
+        let v2 = self.pendula.1.velocity;
+        let l2 = self.pendula.1.arm_length;
+
+        self.pendula.0.acceleration = (-g * (2.0 * m1 + m2) * t1.sin()
+            - m2 * g * (t1 - 2.0 * t2).sin()
+            - 2.0 * (t1 - t2).sin() * m2 * (v2 * v2 * l2 + v1 * v1 * l1 * (t1 - t2).cos()))
+            / (l1 * (2.0 * m1 + m2 - m2 * (2.0 * t1 - 2.0 * t2).cos()));
+        self.pendula.0.acceleration *= 1.0 - self.damping;
+
+        self.pendula.1.acceleration = (2.0
+            * (t1 - t2).sin()
+            * (v1 * v1 * l1 * (m1 + m2)
+                + g * (m1 + m2) * t1.cos()
+                + v2 * v2 * l2 * m2 * (t1 - t2).cos()))
+            / (l2 * (2.0 * m1 + m2 - m2 * (2.0 * t1 - 2.0 * t2).cos()));
+        self.pendula.1.acceleration *= 1.0 - self.damping;
     }
 }

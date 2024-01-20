@@ -1,4 +1,4 @@
-use crate::pendulum::Pendulum;
+use crate::pendulum::{DoublePendulum, Pendulum};
 use eframe::egui;
 
 const MASS_COEFFICIENT: f32 = 1.0;
@@ -7,11 +7,9 @@ pub struct App {
     moving_one: bool,
     moving_two: bool,
 
-    pendulum_one: Pendulum,
-    pendulum_two: Pendulum,
+    dp: DoublePendulum,
 
-    gravity: f32,
-    damping: f32,
+    time_step: f32,
 }
 
 impl Default for App {
@@ -20,21 +18,26 @@ impl Default for App {
             moving_one: false,
             moving_two: false,
 
-            pendulum_one: Pendulum::default(),
-            pendulum_two: Pendulum::default(),
+            dp: DoublePendulum::default(),
 
-            gravity: 9.81,
-            damping: 0.001,
+            time_step: 0.4,
         }
     }
 }
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        self.pendulum_one.pivot = egui::vec2(ctx.screen_rect().size().x / 2.0, 0.0);
-        self.pendulum_two.pivot = self.pendulum_one.position();
-
         self.input(ctx);
+
+        if !(self.moving_one || self.moving_two) {
+            self.dp.update(self.time_step);
+        }
+
+        self.dp.pendula.0.pivot = egui::vec2(
+            ctx.screen_rect().size().x / 2.0,
+            ctx.screen_rect().size().y / 2.0,
+        );
+        self.dp.pendula.1.pivot = self.dp.pendula.0.position();
 
         self.canvas(ctx);
         self.ui(ctx);
@@ -50,16 +53,20 @@ impl App {
                 .striped(true)
                 .spacing([20.0, 5.0])
                 .show(ui, |ui| {
-                    ui.label(egui::RichText::from("Gravity:"));
-                    ui.add(egui::Slider::new(&mut self.gravity, 0.1..=100.0).fixed_decimals(2));
+                    ui.label("Gravity:");
+                    ui.add(egui::Slider::new(&mut self.dp.gravity, 0.1..=100.0).fixed_decimals(2));
                     ui.end_row();
 
                     ui.label("Damping:");
                     ui.add(
-                        egui::Slider::new(&mut self.damping, 0.0..=1.0)
+                        egui::Slider::new(&mut self.dp.damping, 0.0..=1.0)
                             .fixed_decimals(3)
                             .step_by(0.01),
                     );
+                    ui.end_row();
+
+                    ui.label("Time step:");
+                    ui.add(egui::Slider::new(&mut self.time_step, 0.01..=1.0).fixed_decimals(2));
                     ui.end_row();
                 });
             ui.separator();
@@ -71,14 +78,14 @@ impl App {
                 .show(ui, |ui| {
                     ui.label("Mass:");
                     ui.add(
-                        egui::Slider::new(&mut self.pendulum_one.mass, 5.0..=70.0)
+                        egui::Slider::new(&mut self.dp.pendula.0.mass, 5.0..=70.0)
                             .fixed_decimals(2),
                     );
                     ui.end_row();
 
                     ui.label("Arm length:");
                     ui.add(
-                        egui::Slider::new(&mut self.pendulum_one.arm_length, 10.0..=300.0)
+                        egui::Slider::new(&mut self.dp.pendula.0.arm_length, 10.0..=300.0)
                             .fixed_decimals(2),
                     );
                 });
@@ -91,14 +98,14 @@ impl App {
                 .show(ui, |ui| {
                     ui.label("Mass:");
                     ui.add(
-                        egui::Slider::new(&mut self.pendulum_two.mass, 5.0..=70.0)
+                        egui::Slider::new(&mut self.dp.pendula.1.mass, 5.0..=70.0)
                             .fixed_decimals(2),
                     );
                     ui.end_row();
 
                     ui.label("Arm length:");
                     ui.add(
-                        egui::Slider::new(&mut self.pendulum_two.arm_length, 10.0..=300.0)
+                        egui::Slider::new(&mut self.dp.pendula.1.arm_length, 10.0..=300.0)
                             .fixed_decimals(2),
                     );
                 });
@@ -111,8 +118,8 @@ impl App {
             id: "bg".into(),
         });
 
-        self.paint_pendulum(&painter, &self.pendulum_one);
-        self.paint_pendulum(&painter, &self.pendulum_two);
+        self.paint_pendulum(&painter, &self.dp.pendula.0);
+        self.paint_pendulum(&painter, &self.dp.pendula.1);
     }
 
     fn paint_pendulum(&self, painter: &egui::Painter, pendulum: &Pendulum) {
@@ -140,14 +147,14 @@ impl App {
 
             if let Some(pointer_position) = i.pointer.latest_pos().map(|p| p.to_vec2()) {
                 if i.pointer.primary_pressed() {
-                    if (self.pendulum_one.position() - pointer_position).length_sq()
-                        < (self.pendulum_one.mass * MASS_COEFFICIENT).powi(2)
+                    if (self.dp.pendula.0.position() - pointer_position).length_sq()
+                        < (self.dp.pendula.0.mass * MASS_COEFFICIENT).powi(2)
                     {
                         self.moving_one = true;
                     }
 
-                    if (self.pendulum_two.position() - pointer_position).length_sq()
-                        < (self.pendulum_two.mass * MASS_COEFFICIENT).powi(2)
+                    if (self.dp.pendula.1.position() - pointer_position).length_sq()
+                        < (self.dp.pendula.1.mass * MASS_COEFFICIENT).powi(2)
                     {
                         self.moving_two = true;
                     }
@@ -160,12 +167,12 @@ impl App {
         });
 
         if self.moving_one {
-            self.pendulum_one.angle = (pointer_position - self.pendulum_one.pivot).yx().angle();
-            self.pendulum_two.pivot = self.pendulum_one.position();
+            self.dp.pendula.0.angle = (pointer_position - self.dp.pendula.0.pivot).yx().angle();
+            self.dp.pendula.1.pivot = self.dp.pendula.0.position();
         }
 
         if self.moving_two {
-            self.pendulum_two.angle = (pointer_position - self.pendulum_two.pivot).yx().angle();
+            self.dp.pendula.1.angle = (pointer_position - self.dp.pendula.1.pivot).yx().angle();
         }
     }
 }
