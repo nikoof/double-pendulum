@@ -1,0 +1,27 @@
+name: Build release
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - '*'
+
+jobs:
+  build:
+    name: Build x86_64-pc-windows-gnu release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+      - name: Check Nix flake inputs
+        uses: DeterminateSystems/flake-checker-action@v4
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v3
+      - name: Build packages.windows
+        run: nix build .#windows
+      - name: Make release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "result/bin/double-pendulum.exe"
