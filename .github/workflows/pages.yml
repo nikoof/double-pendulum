@@ -16,6 +16,8 @@ jobs:
       - uses: actions/checkout@v3
       - name: Check Nix flake inputs
         uses: DeterminateSystems/flake-checker-action@v4
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v3
       - name: Build packages.gh-pages
         run: nix build .#gh-pages
       - name: Deploy
