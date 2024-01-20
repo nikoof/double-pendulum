@@ -41,6 +41,15 @@
 
         craneLib = (crane.mkLib pkgs).overrideToolchain toolchain;
 
+        toolchainWindows = with fenix.packages.${system};
+          combine [
+            stable.rustc
+            stable.cargo
+            targets.x86_64-pc-windows-gnu.stable.rust-std
+          ];
+
+        craneLibWindows = (crane.mkLib pkgs).overrideToolchain toolchainWindows;
+
           src = pkgs.lib.cleanSourceWith {
             src = ./.;
             filter = path: type:
@@ -73,6 +82,19 @@
           trunkExtraBuildArgs = "--public-url double-pendulum/";
 
           CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
+        });
+
+        packages.windows = craneLibWindows.buildPackage (commonArgs // {
+          inherit cargoArtifacts;
+
+          depsBuildBuild = with pkgs; [
+            pkgsCross.mingwW64.stdenv.cc
+            pkgsCross.mingwW64.windows.pthreads
+          ];
+
+          doCheck = false;
+
+          CARGO_BUILD_TARGET = "x86_64-pc-windows-gnu";
         });
 
         apps.default = utils.lib.mkApp {
