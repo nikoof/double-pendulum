@@ -1,8 +1,8 @@
-use eframe::egui::{vec2, Vec2};
+use eframe::egui::{vec2, Pos2};
 
 #[derive(Clone, Copy, PartialEq)]
 pub struct Pendulum {
-    pub pivot: Vec2,
+    pub pivot: Pos2,
     pub arm_length: f32,
     pub angle: f32,
     pub mass: f32,
@@ -18,7 +18,7 @@ impl Default for Pendulum {
 
 impl Pendulum {
     pub fn new(
-        pivot: impl Into<Vec2>,
+        pivot: impl Into<Pos2>,
         arm_length: f32,
         mass: f32,
         angle: f32,
@@ -41,7 +41,7 @@ impl Pendulum {
     }
 
     #[inline]
-    pub fn position(&self) -> Vec2 {
+    pub fn position(&self) -> Pos2 {
         self.pivot + self.arm_length * vec2(self.angle.sin(), self.angle.cos())
     }
 }
