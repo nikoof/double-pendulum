@@ -1,6 +1,7 @@
 use eframe::egui::{vec2, Pos2};
+use std::f32::consts::TAU;
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Pendulum {
     pub pivot: Pos2,
     pub arm_length: f32,
@@ -37,6 +38,7 @@ impl Pendulum {
 
     pub fn update(&mut self, delta_time: f32) {
         self.angle += self.velocity * delta_time;
+        self.angle %= TAU;
         self.velocity += self.acceleration * delta_time;
     }
 
@@ -46,6 +48,7 @@ impl Pendulum {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct DoublePendulum {
     pub pendula: (Pendulum, Pendulum),
     pub gravity: f32,
@@ -56,7 +59,7 @@ impl Default for DoublePendulum {
     fn default() -> Self {
         Self {
             pendula: (Pendulum::default(), Pendulum::default()),
-            gravity: 1.0,
+            gravity: 9.81,
             damping: 0.005,
         }
     }
@@ -79,7 +82,7 @@ impl DoublePendulum {
         let v2 = self.pendula.1.velocity;
         let l2 = self.pendula.1.arm_length;
 
-        self.pendula.0.acceleration = (-g * (2.0 * m1 + m2) * t1.sin()
+        self.pendula.0.acceleration = ((-g * (2.0 * m1 + m2) * t1.sin())
             - m2 * g * (t1 - 2.0 * t2).sin()
             - 2.0 * (t1 - t2).sin() * m2 * (v2 * v2 * l2 + v1 * v1 * l1 * (t1 - t2).cos()))
             / (l1 * (2.0 * m1 + m2 - m2 * (2.0 * t1 - 2.0 * t2).cos()));

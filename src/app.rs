@@ -43,6 +43,8 @@ pub struct App {
 
     current_tab: Tab,
     current_plot: Plot,
+
+    first_frame: bool,
 }
 
 impl Default for App {
@@ -50,7 +52,7 @@ impl Default for App {
         Self {
             dp: DoublePendulum::default(),
 
-            time_step: 0.4,
+            time_step: 1.0 / 6.0,
 
             running: true,
             moving: (false, false),
@@ -68,6 +70,8 @@ impl Default for App {
 
             current_tab: Tab::Pendulum,
             current_plot: Plot::Angle,
+
+            first_frame: true,
         }
     }
 }
@@ -81,11 +85,23 @@ impl eframe::App for App {
         self.dp.pendula.1.pivot = self.dp.pendula.0.position();
 
         if self.running & !self.moving() {
+            let dp_prev = self.dp;
             self.dp.update(self.time_step);
+
+            if self.dp.pendula.0.acceleration.is_nan() {
+                dbg!(dp_prev.pendula.0);
+                dbg!(dp_prev.pendula.1);
+                panic!();
+            }
         }
 
-        self.record_history();
+        if !self.first_frame {
+            self.record_history();
+        }
+
         self.ui(ctx);
+
+        self.first_frame = false;
         ctx.request_repaint();
     }
 }
@@ -153,7 +169,7 @@ impl App {
                     ui.end_row();
 
                     ui.label("Time step:");
-                    ui.add(egui::Slider::new(&mut self.time_step, 0.01..=1.0).fixed_decimals(2));
+                    ui.add(egui::Slider::new(&mut self.time_step, 0.01..=0.6).fixed_decimals(2));
                     ui.end_row();
                 });
             ui.separator();
