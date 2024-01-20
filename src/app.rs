@@ -4,23 +4,25 @@ use eframe::egui;
 const MASS_COEFFICIENT: f32 = 1.0;
 
 pub struct App {
-    moving_one: bool,
-    moving_two: bool,
-
     dp: DoublePendulum,
 
     time_step: f32,
+
+    running: bool,
+    moving_one: bool,
+    moving_two: bool,
 }
 
 impl Default for App {
     fn default() -> Self {
         Self {
-            moving_one: false,
-            moving_two: false,
-
             dp: DoublePendulum::default(),
 
             time_step: 0.4,
+
+            running: true,
+            moving_one: false,
+            moving_two: false,
         }
     }
 }
@@ -29,7 +31,7 @@ impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.input(ctx);
 
-        if !(self.moving_one || self.moving_two) {
+        if self.running & !(self.moving_one || self.moving_two) {
             self.dp.update(self.time_step);
         }
 
@@ -48,8 +50,8 @@ impl eframe::App for App {
 
 impl App {
     fn ui(&mut self, ctx: &egui::Context) {
-        egui::Window::new("Controls").show(ctx, |ui| {
-            egui::Grid::new("general_controls_grid")
+        egui::Window::new("Settings").show(ctx, |ui| {
+            egui::Grid::new("general_settings_grid")
                 .striped(true)
                 .spacing([20.0, 5.0])
                 .show(ui, |ui| {
@@ -109,6 +111,30 @@ impl App {
                             .fixed_decimals(2),
                     );
                 });
+
+            ui.separator();
+            ui.collapsing(egui::RichText::new("Shortcuts").heading(), |ui| {
+                egui::Grid::new("shortcuts_grid")
+                    .striped(true)
+                    .spacing([20.0, 5.0])
+                    .show(ui, |ui| {
+                        ui.label("Start / Stop:");
+                        ui.label("Space");
+                        ui.end_row();
+
+                        ui.label("Reset:");
+                        ui.label("Ctrl+R");
+                        ui.end_row();
+
+                        ui.label("Zoom in:");
+                        ui.label("Ctrl++");
+                        ui.end_row();
+
+                        ui.label("Zoom in:");
+                        ui.label("Ctrl+-");
+                        ui.end_row();
+                    });
+            });
         });
     }
 
@@ -138,7 +164,25 @@ impl App {
         );
     }
 
+    fn reset(&mut self) {
+        self.dp = DoublePendulum::default();
+    }
+
     fn input(&mut self, ctx: &egui::Context) {
+        ctx.input_mut(|i| {
+            if i.key_pressed(egui::Key::Space) {
+                self.running = !self.running;
+            }
+
+            if i.consume_key(egui::Modifiers::CTRL, egui::Key::R) {
+                self.reset();
+            }
+        });
+
+        self.move_pendula(ctx);
+    }
+
+    fn move_pendula(&mut self, ctx: &egui::Context) {
         let pointer_position = ctx.input(|i| {
             if i.pointer.primary_released() {
                 self.moving_one = false;
@@ -168,11 +212,21 @@ impl App {
 
         if self.moving_one {
             self.dp.pendula.0.angle = (pointer_position - self.dp.pendula.0.pivot).yx().angle();
+            self.dp.pendula.0.acceleration = 0.0;
+            self.dp.pendula.0.velocity = 0.0;
+
             self.dp.pendula.1.pivot = self.dp.pendula.0.position();
+            self.dp.pendula.1.acceleration = 0.0;
+            self.dp.pendula.1.velocity = 0.0;
         }
 
         if self.moving_two {
+            self.dp.pendula.0.acceleration = 0.0;
+            self.dp.pendula.0.velocity = 0.0;
+
             self.dp.pendula.1.angle = (pointer_position - self.dp.pendula.1.pivot).yx().angle();
+            self.dp.pendula.1.acceleration = 0.0;
+            self.dp.pendula.1.velocity = 0.0;
         }
     }
 }

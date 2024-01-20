@@ -12,19 +12,26 @@ pub struct Pendulum {
 
 impl Default for Pendulum {
     fn default() -> Self {
-        Self::new([0.0, 0.0], 100.0, 0.0, 20.0)
+        Self::new([0.0, 0.0], 100.0, 20.0, 0.0, 0.0, 0.0)
     }
 }
 
 impl Pendulum {
-    fn new(pivot: impl Into<Vec2>, arm_length: f32, angle: f32, mass: f32) -> Self {
+    pub fn new(
+        pivot: impl Into<Vec2>,
+        arm_length: f32,
+        mass: f32,
+        angle: f32,
+        velocity: f32,
+        acceleration: f32,
+    ) -> Self {
         Self {
             pivot: pivot.into(),
             arm_length,
             angle,
             mass,
-            velocity: 0.0,
-            acceleration: 0.0,
+            velocity,
+            acceleration,
         }
     }
 
