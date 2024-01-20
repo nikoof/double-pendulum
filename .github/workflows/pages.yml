@@ -2,8 +2,17 @@ name: Github Pages
 
 on:
   push:
+    pull_request:
     branches:
       - main
+    paths:
+      - '**.rs'
+      - '**.js'
+      - '**.html'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'flake.nix'
+      - 'flake.lock'
 
 permissions:
   contents: write
