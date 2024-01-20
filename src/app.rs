@@ -33,6 +33,7 @@ pub struct App {
     canvas_size: egui::Vec2,
     canvas_transform: emath::RectTransform,
 
+    #[cfg(not(target_arch = "wasm32"))]
     epoch: std::time::Instant,
 
     position_history: History<(egui::Pos2, egui::Pos2)>,
@@ -57,6 +58,7 @@ impl Default for App {
             canvas_size: egui::Vec2::ZERO,
             canvas_transform: emath::RectTransform::identity(egui::Rect::ZERO),
 
+            #[cfg(not(target_arch = "wasm32"))]
             epoch: std::time::Instant::now(),
 
             position_history: History::new(0..10000, 5.0 * 3600.0),
@@ -95,7 +97,7 @@ impl App {
                 self.running = !self.running;
             }
 
-            if i.consume_key(egui::Modifiers::CTRL, egui::Key::R) {
+            if i.consume_key(egui::Modifiers::CTRL | egui::Modifiers::ALT, egui::Key::R) {
                 self.reset();
             }
         });
@@ -206,7 +208,7 @@ impl App {
                         ui.end_row();
 
                         ui.label("Reset:");
-                        ui.label("Ctrl+R");
+                        ui.label("Ctrl+Alt+R");
                         ui.end_row();
 
                         ui.label("Zoom in:");
@@ -485,7 +487,11 @@ impl App {
     }
 
     fn record_history(&mut self) {
+        #[cfg(not(target_arch = "wasm32"))]
         let now = self.epoch.elapsed().as_millis() as f64 / 1000.0;
+
+        #[cfg(target_arch = "wasm32")]
+        let now = eframe::web::now_sec();
 
         self.position_history.add(
             now,
@@ -519,6 +525,7 @@ impl App {
         self.moving.0 || self.moving.1
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     fn reset(&mut self) {
         self.dp = DoublePendulum::default();
         self.position_history.clear();
@@ -526,5 +533,14 @@ impl App {
         self.velocity_history.clear();
         self.acceleration_history.clear();
         self.epoch = std::time::Instant::now();
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    fn reset(&mut self) {
+        self.dp = DoublePendulum::default();
+        self.position_history.clear();
+        self.angle_history.clear();
+        self.velocity_history.clear();
+        self.acceleration_history.clear();
     }
 }
