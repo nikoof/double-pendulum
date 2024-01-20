@@ -16,6 +16,7 @@ egui_plot = "0.25.0"
 env_logger = "0.11.0"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = "0.2.89"
 wasm-bindgen-futures = "0.4.40"
 console_error_panic_hook = "0.1.7"
 log = "0.4.20"

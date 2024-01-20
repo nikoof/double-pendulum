@@ -1,0 +1,25 @@
+name: Github Pages
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  build-github-pages:
+    name: Build wasm32 target with Nix
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Check Nix flake inputs
+        uses: DeterminateSystems/flake-checker-action@4
+      - name: Build packages.gh-pages
+        run: nix build .#gh-pages
+      - name: Deploy
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: result/
+          single-commit: false

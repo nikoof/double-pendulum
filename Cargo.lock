@@ -853,6 +853,7 @@ dependencies = [
  "egui_plot",
  "env_logger",
  "log",
+ "wasm-bindgen",
  "wasm-bindgen-futures",
 ]
 
