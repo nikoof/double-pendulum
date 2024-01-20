@@ -70,6 +70,8 @@
           inherit (pkgs) wasm-bindgen-cli;
           inherit cargoArtifacts;
 
+          trunkExtraBuildArgs = "--public-url double-pendulum/";
+
           CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
         });
 
