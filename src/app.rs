@@ -85,14 +85,7 @@ impl eframe::App for App {
         self.dp.pendula.1.pivot = self.dp.pendula.0.position();
 
         if self.running & !self.moving() {
-            let dp_prev = self.dp;
             self.dp.update(self.time_step);
-
-            if self.dp.pendula.0.acceleration.is_nan() {
-                dbg!(dp_prev.pendula.0);
-                dbg!(dp_prev.pendula.1);
-                panic!();
-            }
         }
 
         if !self.first_frame {
@@ -157,12 +150,12 @@ impl App {
                 .spacing([20.0, 5.0])
                 .show(ui, |ui| {
                     ui.label("Gravity:");
-                    ui.add(egui::Slider::new(&mut self.dp.gravity, 0.1..=20.0).fixed_decimals(2));
+                    ui.add(egui::Slider::new(&mut self.dp.gravity, 0.1..=15.0).fixed_decimals(2));
                     ui.end_row();
 
                     ui.label("Damping:");
                     ui.add(
-                        egui::Slider::new(&mut self.dp.damping, 0.0..=1.0)
+                        egui::Slider::new(&mut self.dp.damping, 0.0..=0.9)
                             .fixed_decimals(3)
                             .step_by(0.01),
                     );
