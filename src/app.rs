@@ -5,24 +5,24 @@ const MASS_COEFFICIENT: f32 = 1.0;
 
 pub struct App {
     dp: DoublePendulum,
+    lines: Vec<Vec<egui::Pos2>>,
 
     time_step: f32,
 
     running: bool,
-    moving_one: bool,
-    moving_two: bool,
+    moving: (bool, bool),
 }
 
 impl Default for App {
     fn default() -> Self {
         Self {
             dp: DoublePendulum::default(),
+            lines: vec![vec![]],
 
             time_step: 0.4,
 
             running: true,
-            moving_one: false,
-            moving_two: false,
+            moving: (false, false),
         }
     }
 }
@@ -30,16 +30,21 @@ impl Default for App {
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.input(ctx);
+        self.move_pendula(ctx);
 
-        if self.running & !(self.moving_one || self.moving_two) {
-            self.dp.update(self.time_step);
-        }
-
-        self.dp.pendula.0.pivot = egui::vec2(
-            ctx.screen_rect().size().x / 2.0,
-            ctx.screen_rect().size().y / 2.0,
-        );
+        let screen_size = ctx.screen_rect().size();
+        self.dp.pendula.0.pivot = egui::vec2(screen_size.x / 2.0, screen_size.y / 2.0);
         self.dp.pendula.1.pivot = self.dp.pendula.0.position();
+
+        if self.running & !self.moving() {
+            self.dp.update(self.time_step);
+
+            let current_line = self.lines.last_mut().expect("Lines should never be empty");
+            let pos = self.dp.pendula.1.position().to_pos2();
+            if current_line.last() != Some(&pos) {
+                current_line.push(pos);
+            }
+        }
 
         self.canvas(ctx);
         self.ui(ctx);
@@ -49,8 +54,20 @@ impl eframe::App for App {
 }
 
 impl App {
+    fn input(&mut self, ctx: &egui::Context) {
+        ctx.input_mut(|i| {
+            if i.key_pressed(egui::Key::Space) {
+                self.running = !self.running;
+            }
+
+            if i.consume_key(egui::Modifiers::CTRL, egui::Key::R) {
+                self.reset();
+            }
+        });
+    }
+
     fn ui(&mut self, ctx: &egui::Context) {
-        egui::Window::new("Settings").show(ctx, |ui| {
+        egui::Window::new("\u{2699} Settings").show(ctx, |ui| {
             egui::Grid::new("general_settings_grid")
                 .striped(true)
                 .spacing([20.0, 5.0])
@@ -144,6 +161,21 @@ impl App {
             id: "bg".into(),
         });
 
+        painter.extend(
+            self.lines
+                .iter()
+                .filter(|line| line.len() >= 2)
+                .map(|line| {
+                    egui::Shape::line(
+                        line.clone(),
+                        egui::Stroke {
+                            width: 1.0,
+                            color: egui::Color32::GRAY,
+                        },
+                    )
+                }),
+        );
+
         self.paint_pendulum(&painter, &self.dp.pendula.0);
         self.paint_pendulum(&painter, &self.dp.pendula.1);
     }
@@ -164,29 +196,11 @@ impl App {
         );
     }
 
-    fn reset(&mut self) {
-        self.dp = DoublePendulum::default();
-    }
-
-    fn input(&mut self, ctx: &egui::Context) {
-        ctx.input_mut(|i| {
-            if i.key_pressed(egui::Key::Space) {
-                self.running = !self.running;
-            }
-
-            if i.consume_key(egui::Modifiers::CTRL, egui::Key::R) {
-                self.reset();
-            }
-        });
-
-        self.move_pendula(ctx);
-    }
-
     fn move_pendula(&mut self, ctx: &egui::Context) {
         let pointer_position = ctx.input(|i| {
             if i.pointer.primary_released() {
-                self.moving_one = false;
-                self.moving_two = false;
+                self.moving.0 = false;
+                self.moving.1 = false;
             }
 
             if let Some(pointer_position) = i.pointer.latest_pos().map(|p| p.to_vec2()) {
@@ -194,13 +208,13 @@ impl App {
                     if (self.dp.pendula.0.position() - pointer_position).length_sq()
                         < (self.dp.pendula.0.mass * MASS_COEFFICIENT).powi(2)
                     {
-                        self.moving_one = true;
+                        self.moving.0 = true;
                     }
 
                     if (self.dp.pendula.1.position() - pointer_position).length_sq()
                         < (self.dp.pendula.1.mass * MASS_COEFFICIENT).powi(2)
                     {
-                        self.moving_two = true;
+                        self.moving.1 = true;
                     }
                 }
 
@@ -210,7 +224,7 @@ impl App {
             }
         });
 
-        if self.moving_one {
+        if self.moving.0 {
             self.dp.pendula.0.angle = (pointer_position - self.dp.pendula.0.pivot).yx().angle();
             self.dp.pendula.0.acceleration = 0.0;
             self.dp.pendula.0.velocity = 0.0;
@@ -218,15 +232,27 @@ impl App {
             self.dp.pendula.1.pivot = self.dp.pendula.0.position();
             self.dp.pendula.1.acceleration = 0.0;
             self.dp.pendula.1.velocity = 0.0;
+            self.lines = vec![vec![]];
         }
 
-        if self.moving_two {
+        if self.moving.1 {
             self.dp.pendula.0.acceleration = 0.0;
             self.dp.pendula.0.velocity = 0.0;
 
             self.dp.pendula.1.angle = (pointer_position - self.dp.pendula.1.pivot).yx().angle();
             self.dp.pendula.1.acceleration = 0.0;
             self.dp.pendula.1.velocity = 0.0;
+            self.lines = vec![vec![]];
         }
+    }
+
+    #[inline]
+    fn moving(&self) -> bool {
+        self.moving.0 || self.moving.1
+    }
+
+    fn reset(&mut self) {
+        self.dp = DoublePendulum::default();
+        self.lines = vec![vec![]];
     }
 }
