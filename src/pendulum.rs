@@ -10,7 +10,7 @@ pub struct Pendulum {
 
 impl Default for Pendulum {
     fn default() -> Self {
-        Self::new([0.0, 0.0], 100.0, 0.0, 1.0)
+        Self::new([0.0, 0.0], 100.0, 0.0, 20.0)
     }
 }
 
