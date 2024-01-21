@@ -155,9 +155,9 @@ impl App {
 
                     ui.label("Damping:");
                     ui.add(
-                        egui::Slider::new(&mut self.dp.damping, 0.0..=0.9)
+                        egui::Slider::new(&mut self.dp.damping, 0.0..=0.01)
                             .fixed_decimals(3)
-                            .step_by(0.01),
+                            .step_by(0.001),
                     );
                     ui.end_row();
 

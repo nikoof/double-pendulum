@@ -60,7 +60,7 @@ impl Default for DoublePendulum {
         Self {
             pendula: (Pendulum::default(), Pendulum::default()),
             gravity: 9.81,
-            damping: 0.005,
+            damping: 0.001,
         }
     }
 }
@@ -86,7 +86,7 @@ impl DoublePendulum {
             - m2 * g * (t1 - 2.0 * t2).sin()
             - 2.0 * (t1 - t2).sin() * m2 * (v2 * v2 * l2 + v1 * v1 * l1 * (t1 - t2).cos()))
             / (l1 * (2.0 * m1 + m2 - m2 * (2.0 * t1 - 2.0 * t2).cos()));
-        self.pendula.0.acceleration *= 1.0 - self.damping;
+        self.pendula.0.velocity *= 1.0 - self.damping;
 
         self.pendula.1.acceleration = (2.0
             * (t1 - t2).sin()
@@ -94,6 +94,6 @@ impl DoublePendulum {
                 + g * (m1 + m2) * t1.cos()
                 + v2 * v2 * l2 * m2 * (t1 - t2).cos()))
             / (l2 * (2.0 * m1 + m2 - m2 * (2.0 * t1 - 2.0 * t2).cos()));
-        self.pendula.1.acceleration *= 1.0 - self.damping;
+        self.pendula.1.velocity *= 1.0 - self.damping;
     }
 }
