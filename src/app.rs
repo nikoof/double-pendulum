@@ -140,96 +140,126 @@ impl App {
     }
 
     fn settings(&mut self, ctx: &egui::Context) {
-        egui::SidePanel::left("settings_panel").show(ctx, |ui| {
-            ui.add_space(5.0);
-            ui.vertical_centered(|ui| ui.heading("\u{2699} Settings"));
-            ui.separator();
+        egui::SidePanel::left("settings_panel")
+            .resizable(false)
+            .show(ctx, |ui| {
+                egui::TopBottomPanel::top("top_half")
+                    .show_separator_line(false)
+                    .show_inside(ui, |ui| {
+                        ui.add_space(5.0);
+                        ui.vertical_centered(|ui| ui.heading("\u{2699} Settings"));
+                        ui.separator();
 
-            egui::Grid::new("general_settings_grid")
-                .striped(true)
-                .spacing([20.0, 5.0])
-                .show(ui, |ui| {
-                    ui.label("Gravity:");
-                    ui.add(egui::Slider::new(&mut self.dp.gravity, 0.1..=15.0).fixed_decimals(2));
-                    ui.end_row();
+                        egui::Grid::new("general_settings_grid")
+                            .striped(true)
+                            .spacing([20.0, 5.0])
+                            .show(ui, |ui| {
+                                ui.label("Gravity:");
+                                ui.add(
+                                    egui::Slider::new(&mut self.dp.gravity, 0.1..=15.0)
+                                        .fixed_decimals(2),
+                                );
+                                ui.end_row();
 
-                    ui.label("Damping:");
-                    ui.add(
-                        egui::Slider::new(&mut self.dp.damping, 0.0..=0.01)
-                            .fixed_decimals(3)
-                            .step_by(0.001),
-                    );
-                    ui.end_row();
+                                ui.label("Damping:");
+                                ui.add(
+                                    egui::Slider::new(&mut self.dp.damping, 0.0..=0.01)
+                                        .fixed_decimals(3)
+                                        .step_by(0.001),
+                                );
+                                ui.end_row();
 
-                    ui.label("Time step:");
-                    ui.add(egui::Slider::new(&mut self.time_step, 0.01..=0.6).fixed_decimals(2));
-                    ui.end_row();
-                });
-            ui.separator();
+                                ui.label("Time step:");
+                                ui.add(
+                                    egui::Slider::new(&mut self.time_step, 0.01..=0.6)
+                                        .fixed_decimals(2),
+                                );
+                                ui.end_row();
+                            });
+                        ui.separator();
 
-            ui.heading("First pendulum");
-            egui::Grid::new("first_pendulum_grid")
-                .striped(true)
-                .spacing([20.0, 5.0])
-                .show(ui, |ui| {
-                    ui.label("Mass:");
-                    ui.add(
-                        egui::Slider::new(&mut self.dp.pendula.0.mass, 5.0..=70.0)
-                            .fixed_decimals(2),
-                    );
-                    ui.end_row();
+                        ui.heading("First pendulum");
+                        egui::Grid::new("first_pendulum_grid")
+                            .striped(true)
+                            .spacing([20.0, 5.0])
+                            .show(ui, |ui| {
+                                ui.label("Mass:");
+                                ui.add(
+                                    egui::Slider::new(&mut self.dp.pendula.0.mass, 5.0..=70.0)
+                                        .fixed_decimals(2),
+                                );
+                                ui.end_row();
 
-                    ui.label("Arm length:");
-                    ui.add(
-                        egui::Slider::new(&mut self.dp.pendula.0.arm_length, 10.0..=300.0)
-                            .fixed_decimals(2),
-                    );
-                });
-            ui.separator();
+                                ui.label("Arm length:");
+                                ui.add(
+                                    egui::Slider::new(
+                                        &mut self.dp.pendula.0.arm_length,
+                                        10.0..=300.0,
+                                    )
+                                    .fixed_decimals(2),
+                                );
+                            });
+                        ui.separator();
 
-            ui.heading("Second pendulum");
-            egui::Grid::new("second_pendulum_grid")
-                .striped(true)
-                .spacing([20.0, 5.0])
-                .show(ui, |ui| {
-                    ui.label("Mass:");
-                    ui.add(
-                        egui::Slider::new(&mut self.dp.pendula.1.mass, 5.0..=70.0)
-                            .fixed_decimals(2),
-                    );
-                    ui.end_row();
+                        ui.heading("Second pendulum");
+                        egui::Grid::new("second_pendulum_grid")
+                            .striped(true)
+                            .spacing([20.0, 5.0])
+                            .show(ui, |ui| {
+                                ui.label("Mass:");
+                                ui.add(
+                                    egui::Slider::new(&mut self.dp.pendula.1.mass, 5.0..=70.0)
+                                        .fixed_decimals(2),
+                                );
+                                ui.end_row();
 
-                    ui.label("Arm length:");
-                    ui.add(
-                        egui::Slider::new(&mut self.dp.pendula.1.arm_length, 10.0..=300.0)
-                            .fixed_decimals(2),
-                    );
-                });
+                                ui.label("Arm length:");
+                                ui.add(
+                                    egui::Slider::new(
+                                        &mut self.dp.pendula.1.arm_length,
+                                        10.0..=300.0,
+                                    )
+                                    .fixed_decimals(2),
+                                );
+                            });
 
-            ui.separator();
-            ui.collapsing(egui::RichText::new("Shortcuts").heading(), |ui| {
-                egui::Grid::new("shortcuts_grid")
-                    .striped(true)
-                    .spacing([10.0, 5.0])
-                    .show(ui, |ui| {
-                        ui.label("Start / Stop:");
-                        ui.label("Space");
-                        ui.end_row();
+                        ui.separator();
+                        ui.collapsing(egui::RichText::new("Shortcuts").heading(), |ui| {
+                            egui::Grid::new("shortcuts_grid")
+                                .striped(true)
+                                .spacing([10.0, 5.0])
+                                .show(ui, |ui| {
+                                    ui.label("Start / Stop:");
+                                    ui.label("Space");
+                                    ui.end_row();
 
-                        ui.label("Reset:");
-                        ui.label("Ctrl+Alt+R");
-                        ui.end_row();
+                                    ui.label("Reset:");
+                                    ui.label("Ctrl+Alt+R");
+                                    ui.end_row();
 
-                        ui.label("Zoom in:");
-                        ui.label("Ctrl++");
-                        ui.end_row();
+                                    ui.label("Zoom in:");
+                                    ui.label("Ctrl++");
+                                    ui.end_row();
 
-                        ui.label("Zoom in:");
-                        ui.label("Ctrl+-");
-                        ui.end_row();
+                                    ui.label("Zoom in:");
+                                    ui.label("Ctrl+-");
+                                    ui.end_row();
+                                });
+                        });
+                    });
+
+                egui::TopBottomPanel::bottom("bottom_half")
+                    .show_separator_line(false)
+                    .show_inside(ui, |ui| {
+                        ui.separator();
+                        ui.vertical_centered(|ui| {
+                            ui.hyperlink_to(
+                                "(source code)",
+                                "https://github.com/nikoof/double-pendulum",
+                            )
+                        });
                     });
             });
-        });
     }
 
     fn canvas(&mut self, ctx: &egui::Context) {
